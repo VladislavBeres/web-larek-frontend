@@ -5,77 +5,91 @@ export interface ApiListResponse<T> {
   items: T[];
 }
 
-// --- ТОВАРЫ ---
+// Товары
 
 export interface Product {
   id: string;
+  description?: string;
+  image: string;
   title: string;
   price: number;
-  image: string;
-  description?: string;
+  category: string;
 }
 
-// --- КОРЗИНА ---
-
+// счетчик корзина
 export interface CartItem extends Product {
   quantity: number;
 }
 
-export interface CartState {
-  items: CartItem[];
-  total: number;
-}
 
-// --- СОБЫТИЯ ---
+// События
+// export interface AppEventMap {
+//   'basket:open': void;
+//   'basket:add': Product;
+//   'basket:remove': string;
+//   'basket:clear': void;
+//   'order:submit': OrderData;
+//   'modal:open': HTMLElement;
+//   'modal:close': void;
+//   'cart:changed': CartItem[]; // при изменении содержимого корзины
+//   'cart:updated': { count: number }; // при обновлении счётчика
+//   'checkout:start': void; // переход к оформлению
+// }
 
-export interface AppEventMap {
-  'basket:open': void;
-  'basket:add': Product;
-  'basket:remove': string; // productId
-  'basket:clear': void;
-  'order:submit': OrderData;
-  'modal:open': HTMLElement;
-  'modal:close': void;
-}
-
-// --- ДАННЫЕ ЗАКАЗА ---
+// Данные заказа
 
 export interface OrderData {
-  name: string;
-  email: string;
-  phone: string;
+  items: string[];
+  total: number;
   address: string;
   payment: PaymentMethod;
-  items: CartItem[];
+  email: string;
+  phone: string;
 }
 
-export type PaymentMethod = 'online' | 'upon-receipt';
+export type PaymentMethod = "card" | "cash";
 
-// --- ВАЛИДАЦИЯ ФОРМЫ ---
-
-export interface FormFieldValidationResult {
-  valid: boolean;
-  errorMessage?: string;
-}
-
-// --- КОМПОНЕНТЫ ---
-
-export interface ComponentProps {
-  [key: string]: unknown;
-}
 
 export interface ComponentInterface {
   element: HTMLElement;            // элемент модального окна
-  render(): void;
   setEventListeners(): void;
+  isValid?(): boolean;
+  reset?(): void
 }
 
-export interface ModalInterface extends ComponentInterface {
-  closeButton: HTMLElement;
-  open(content: HTMLElement): void;
-  close(): void;
+export interface CheckoutStepOneComponentInterface extends ComponentInterface {
+  getFormData(): {
+    address: string;
+    payment: PaymentMethod;
+  };
+
 }
 
-// --- УТИЛИТЫ ---
+export interface CheckoutStepTwoComponentInterface extends ComponentInterface {
+  getFormData(): {
+    email: string;
+    phone: string;
+  };
+  showError(message: string): void;
+}
 
-export type TemplateSelector = string;
+// -------------------------------------
+
+// Презентер оформления заказа
+export interface CheckoutPresenterInterface {
+  startCheckout(): void;
+  nextStep(): void;
+  submitOrder(): void;
+  
+}
+
+export interface ValidationRule {
+  validate: () => boolean;
+  errorMessage: string;
+};
+
+// Компонент успешного оформления заказа
+export interface OrderSuccessComponentInterface extends ComponentInterface {
+  setTotal(total: number): void;
+  onClose(callback: () => void): void;
+}
