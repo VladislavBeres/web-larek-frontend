@@ -1,18 +1,16 @@
+
 import { Product } from '../types';
-import { Api } from './base/api';
+import { EventEmitter } from './base/events';
 
 export class ProductModel {
-  private api: Api;
   private products: Product[] = [];
 
-  constructor(api: Api) {
-    this.api = api;
-  }
+  constructor(private emitter: EventEmitter) {}
 
-  async fetchProducts(): Promise<Product[]> {
-    const response = await this.api.get('/product') as { items: Product[] };
-    this.products = response.items;
-    return this.products;
+  // Метод обновления данных в модели + эмит события для рендера
+  setProducts(products: Product[]) {
+    this.products = products;
+    this.emitter.emit('products:updated', this.products);
   }
 
   getAll(): Product[] {

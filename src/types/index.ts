@@ -52,7 +52,6 @@ export type PaymentMethod = "card" | "cash";
 
 export interface ComponentInterface {
   element: HTMLElement;            // элемент модального окна
-  setEventListeners(): void;
   isValid?(): boolean;
   reset?(): void
 }
@@ -70,7 +69,6 @@ export interface CheckoutStepTwoComponentInterface extends ComponentInterface {
     email: string;
     phone: string;
   };
-  showError(message: string): void;
 }
 
 // -------------------------------------
@@ -92,4 +90,11 @@ export interface ValidationRule {
 export interface OrderSuccessComponentInterface extends ComponentInterface {
   setTotal(total: number): void;
   onClose(callback: () => void): void;
+}
+
+export interface OrderFormData {
+  address?: string;
+  payment?: "card" | "cash" | null;
+  email?: string;
+  phone?: string;
 }

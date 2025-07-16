@@ -20,4 +20,12 @@ export const STORAGE_KEYS = {
   cart: 'web-larek-cart',
   order: 'web-larek-order',
 };
+
+export const CATEGORY_CLASSES: Record<string, string> = {
+  'софт-скил': 'soft',
+  'хард-скил': 'hard',
+  'другое': 'other',
+  'дополнительное': 'additional',
+  'кнопка': 'button',
+};
   

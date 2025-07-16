@@ -1,86 +1,68 @@
-import { cloneTemplate } from "../utils/utils";
-import { FormValidator } from "./FormValidator";
 import { CheckoutStepOneComponentInterface } from "../types";
-import { TEMPLATE_SELECTORS } from "../utils/constants";
+import { EventEmitter } from "./base/events";
+import { PageView } from "./PageView";
 
 export class CheckoutStepOne implements CheckoutStepOneComponentInterface {
   public element: HTMLElement;
-  private form: HTMLFormElement;
+
   private addressInput: HTMLInputElement;
   private cardBtn: HTMLButtonElement;
   private cashBtn: HTMLButtonElement;
   private nextBtn: HTMLButtonElement;
   private errorSpan: HTMLElement;
-
   private selectedPayment: "card" | "cash" | null = null;
-  private validator = new FormValidator();
 
-  constructor() {
-    this.element = cloneTemplate<HTMLFormElement>(TEMPLATE_SELECTORS.TemplateCheckoutStepOne);
-    this.form = this.element as HTMLFormElement;
-    this.addressInput = this.form.querySelector("[name='address']")!;
-    this.cardBtn = this.form.querySelector("button[name='card']")!;
-    this.cashBtn = this.form.querySelector("button[name='cash']")!;
-    this.nextBtn = this.form.querySelector("button[type='submit']")!;
-    this.errorSpan = this.form.querySelector(".form__errors")!;
+constructor(private emitter: EventEmitter, private pageView: PageView) {
+  this.element = this.pageView.getCheckoutStepOneTemplate().cloneNode(true) as HTMLFormElement;
 
-    this.setupValidator();
-    this.setEventListeners();
-  }
+  this.addressInput = this.element.querySelector("[name='address']")!;
+  this.cardBtn = this.element.querySelector("button[name='card']")!;
+  this.cashBtn = this.element.querySelector("button[name='cash']")!;
+  this.nextBtn = this.element.querySelector("button[type='submit']")!;
+  this.errorSpan = this.element.querySelector(".form__errors")!;
 
-  private setupValidator() {
-    this.validator.clearRules();
-    this.validator.addRule(() => this.selectedPayment !== null, "Выберите способ оплаты");
-    this.validator.addRule(() => this.addressInput.value.trim() !== "", "Введите адрес доставки");
-  }
+  this.setListeners();
+}
 
-  public setEventListeners(): void {
+  private setListeners() {
     this.cardBtn.addEventListener("click", () => {
       this.selectedPayment = "card";
-      this.updatePaymentButtons();
-      this.validateForm();
+      this.toggleButtons();
+      this.emitter.emit("order:change", { key: "payment", value: "card" });
     });
 
     this.cashBtn.addEventListener("click", () => {
       this.selectedPayment = "cash";
-      this.updatePaymentButtons();
-      this.validateForm();
+      this.toggleButtons();
+      this.emitter.emit("order:change", { key: "payment", value: "cash" });
     });
 
     this.addressInput.addEventListener("input", () => {
-      this.validateForm();
+      this.emitter.emit("order:change", { key: "address", value: this.addressInput.value });
     });
 
-    this.form.addEventListener("submit", (e) => {
+    this.element.addEventListener("submit", (e) => {
       e.preventDefault();
-      const result = this.validator.validate();
-      if (result.valid) {
-        this.clearError();
-        this.emitSubmit();
-      } else {
-        this.showError(result.error!);
-      }
+      this.element.dispatchEvent(new CustomEvent("formSubmit", { bubbles: true }));
+    });
+
+    this.emitter.on("errors:show", (errors: Record<string, string>) => {
+      this.showError(errors.payment || errors.address || "");
+      this.nextBtn.disabled = !!(errors.payment || errors.address);
     });
   }
 
-  private updatePaymentButtons() {
+  private toggleButtons() {
     this.cardBtn.classList.toggle("button_alt-active", this.selectedPayment === "card");
     this.cashBtn.classList.toggle("button_alt-active", this.selectedPayment === "cash");
   }
 
-  private validateForm() {
-    const result = this.validator.validate();
-    if (result.valid) {
-      this.clearError();
-      this.setNextButtonEnabled(true);
-    } else {
-      this.showError(result.error!);
-      this.setNextButtonEnabled(false);
-    }
-  }
-
-  private emitSubmit() {
-    this.element.dispatchEvent(new CustomEvent("formSubmit", { bubbles: true }));
+  public reset() {
+    this.addressInput.value = "";
+    this.selectedPayment = null;
+    this.toggleButtons();
+    this.clearError();
+    this.nextBtn.disabled = true;
   }
 
   private showError(message: string) {
@@ -91,26 +73,14 @@ export class CheckoutStepOne implements CheckoutStepOneComponentInterface {
     this.errorSpan.textContent = "";
   }
 
-  private setNextButtonEnabled(enabled: boolean) {
-    this.nextBtn.disabled = !enabled;
+  public getFormData() {
+    return {
+      address: this.addressInput.value,
+      payment: this.selectedPayment!,
+    };
   }
 
-public getFormData() {
-  return {
-    payment: this.selectedPayment!,
-    address: this.addressInput.value.trim(),
-  };
-}
-
-  public isValid(): boolean {
-  return this.validator.validate().valid;
-}
-
-  public reset(): void {
-    this.addressInput.value = "";
-    this.selectedPayment = null;
-    this.updatePaymentButtons();
-    this.clearError();
-    this.setNextButtonEnabled(false);
+  public setEventListeners() {
+    this.setListeners();
   }
 }

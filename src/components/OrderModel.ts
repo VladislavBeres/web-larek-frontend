@@ -1,7 +1,7 @@
 import { OrderFormData } from "../types";
 import { EventEmitter } from "./base/events";
 
-export class OrderMode {
+export class OrderModel {
   private data: OrderFormData = {};
   private emitter: EventEmitter;
 
@@ -40,12 +40,16 @@ getValidationErrors(): Record<string, string> {
   }
 
   // Шаг 2
-  if (this.data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.data.email)) {
-    errors.email = "Введите корректный email";
-  }
-  if (this.data.phone && !/^(7|8)\d{10}$/.test(this.data.phone.replace(/\D/g, ""))) {
-    errors.phone = "Введите корректный номер телефона";
-  }
+  if (!this.data.email?.trim()) {
+  errors.email = "Введите email";
+} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.data.email)) {
+  errors.email = "Введите корректный email";
+}
+  if (!this.data.phone?.trim()) {
+  errors.phone = "Введите номер телефона";
+} else if (!/^(7|8)\d{10}$/.test(this.data.phone.replace(/\D/g, ""))) {
+  errors.phone = "Введите корректный номер телефона";
+}
 
   return errors;
 }

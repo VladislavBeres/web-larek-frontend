@@ -10,16 +10,16 @@ export class Modal {
     this.setEventListeners();
   }
 
-  open(content: HTMLElement) {
-    this.modalContent.innerHTML = "";
-    this.modalContent.appendChild(content);
-    this.modalElement.classList.add("modal_active");
-  }
+open(content: HTMLElement) {
+  this.modalContent.innerHTML = "";
+  this.modalContent.appendChild(content);
+  this.modalElement.classList.add("modal_active");
+}
 
-  close() {
-    this.modalElement.classList.remove("modal_active");
-    this.modalContent.innerHTML = "";
-  }
+close() {
+  this.modalElement.classList.remove("modal_active");
+  this.modalContent.innerHTML = "";
+}
 
   private onEscClose = (e: KeyboardEvent) => {
     if (e.key === "Escape") {

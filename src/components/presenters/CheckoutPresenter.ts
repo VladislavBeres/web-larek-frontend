@@ -1,76 +1,72 @@
-import {
-  CartItem,
-  CheckoutStepOneComponentInterface,
-  CheckoutStepTwoComponentInterface,
-  CheckoutPresenterInterface,
-  OrderData
-} from "../../types";
+import { CartItem, OrderFormData } from "../../types";
 import { Api } from "../base/api";
 import { EventEmitter } from "../base/events";
+import { CheckoutStepOne } from "../CheckoutStepOne";
+import { CheckoutStepTwo } from "../CheckoutStepTwo";
 import { Modal } from "../Modal/Modal";
+import { OrderModel } from "../OrderModel";
 import { OrderSuccess } from "../OrderSuccess";
+import { PageView } from "../PageView";
 
-export class CheckoutPresenter implements CheckoutPresenterInterface {
+export class CheckoutPresenter {
   constructor(
-    private stepOne: CheckoutStepOneComponentInterface,
-    private stepTwo: CheckoutStepTwoComponentInterface,
+    private stepOne: CheckoutStepOne,
+    private stepTwo: CheckoutStepTwo,
     private modal: Modal,
     private api: Api,
     private events: EventEmitter,
-    private cartItems: CartItem[]
-  ) {}
+    private getCartItems: () => CartItem[],
+    private orderModel: OrderModel,
+    private pageView: PageView
+  ) {
+    this.stepOne.element.addEventListener("formSubmit", () => this.nextStep());
+    this.stepTwo.element.addEventListener("formSubmit", () => this.submitOrder());
 
-public startCheckout() {
-  this.modal.open(this.stepOne.element);
-  this.stepOne.setEventListeners();
+    this.events.on("order:change", (data: { key: keyof OrderFormData; value: string | null }) => {
+      this.orderModel.setData(data.key, data.value);
+    });
+  }
 
-  this.stepOne.element.addEventListener("formSubmit", () => this.nextStep());
-}
+  public startCheckout() {
+    this.modal.setContent(this.stepOne.element);
+  }
 
-public nextStep() {
-  if (!this.stepOne.isValid()) return;
-
-  this.modal.setContent(this.stepTwo.element);
-  this.stepTwo.setEventListeners();
-  this.stepTwo.element.addEventListener("formSubmit", () => this.submitOrder());
-}
+  public nextStep() {
+    if (!this.orderModel.isStepOneValid()) return;
+    this.modal.setContent(this.stepTwo.element);
+  }
 
   public submitOrder() {
-    if (!this.stepTwo.isValid()) {
-      this.stepTwo.showError("Пожалуйста, заполните все поля корректно");
-      return;
-    }
+    if (!this.orderModel.isStepTwoValid()) return;
 
-    const ids = this.cartItems.map((item) => item.id);
-    const total = this.cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-
-    const orderData: OrderData = {
-      ...this.stepOne.getFormData(),
-      ...this.stepTwo.getFormData(),
-      items: ids,
-      total,
-    };
+    const formData = this.orderModel.getData();
+    const items = this.getCartItems();
+    const ids = items.map((item) => item.id);
+    const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
     this.api
-      .post("/order", orderData)
-      .then(() => {
-        this.showSuccessModal(total);
-        this.events.emit("basket:clear");
-        this.stepOne.reset();
-        this.stepTwo.reset();
-      })
+      .post("/order", { ...formData, items: ids, total })
+.then(() => {
+  this.showSuccessModal(total);
+  this.events.emit("basket:clear");
+  this.orderModel.reset();
+  this.stepOne.reset();
+  this.stepTwo.reset();
+})
       .catch((err) => {
-        this.stepTwo.showError("Ошибка при оформлении заказа: " + (err.message || err));
+        this.events.emit("errors:show", { server: err.message || "Ошибка сервера" });
       });
   }
 
-  private showSuccessModal(total: number) {
-    const success = new OrderSuccess();
-    success.setTotal(total);
-    success.onClose(() => {
-      this.modal.close();
-      this.events.emit("modal:close");
-    });
-    this.modal.setContent(success.element);
-  }
+private showSuccessModal(total: number): void {
+  const success = new OrderSuccess(this.pageView);
+  success.setTotal(total);
+
+  success.onClose(() => {
+    this.modal.close();
+    this.events.emit("modal:close");
+  });
+
+  this.modal.setContent(success.element);
+}
 }

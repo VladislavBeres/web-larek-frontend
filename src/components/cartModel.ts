@@ -13,16 +13,13 @@ export class CartModel {
   this.emitUpdate(); // при загрузке корзины обновим счётчик
 }
 
-  add(product: Product): void {
-    const existingItem = this.items.get(product.id);
-    if (existingItem) {
-      existingItem.quantity += 1;
-    } else {
-      this.items.set(product.id, { ...product, quantity: 1 });
-    }
+add(product: Product): void {
+  if (!this.items.has(product.id)) {
+    this.items.set(product.id, { ...product, quantity: 1 });
     this.saveToStorage();
     this.emitUpdate();
   }
+}
 
   remove(productId: string): void {
     this.items.delete(productId);
