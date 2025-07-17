@@ -29,22 +29,38 @@ export class CatalogPresenter {
     this.events = events;
     this.pageView = pageView;
 
+    // Подписка на обновление продуктов
     this.model['emitter'].on('products:updated', (products: Product[]) => {
       this.render(products);
     });
+
+    // Подписка на добавление/удаление из корзины
+    this.events.on('product:add-to-cart', (product: Product) => {
+      if (this.cartModel.has(product.id)) {
+        this.cartModel.remove(product.id);
+      } else {
+        this.cartModel.add(product);
+      }
+      this.events.emit('cart:changed', this.cartModel.getAll());
+    });
+
+    // Подписка на открытие превью
+    this.events.on('product:open-preview', (previewContent: HTMLElement) => {
+      this.modal.open(previewContent);
+    });
   }
 
-  init() {
+  public init() {
     const products = this.model.getAll();
     this.render(products);
   }
 
-  render(products: Product[]) {
+  private render(products: Product[]) {
     this.container.innerHTML = '';
     products.forEach(product => {
-      // Передаём pageView и общий events
-      const card = new ProductCard(product, this.cartModel, this.modal, this.events, this.pageView);
+      const card = new ProductCard(product, this.events, this.pageView);
       this.container.append(card.getElement());
     });
+    
   }
 }

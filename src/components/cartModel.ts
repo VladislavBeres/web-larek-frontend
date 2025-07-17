@@ -8,18 +8,26 @@ export class CartModel {
   private emitter: EventEmitter;
 
   constructor(emitter: EventEmitter) {
-  this.emitter = emitter;
-  this.loadFromStorage();
-  this.emitUpdate(); // при загрузке корзины обновим счётчик
-}
-
-add(product: Product): void {
-  if (!this.items.has(product.id)) {
-    this.items.set(product.id, { ...product, quantity: 1 });
-    this.saveToStorage();
+    this.emitter = emitter;
+    this.loadFromStorage();
     this.emitUpdate();
+
+    // Позволяет карточкам проверять наличие товара в корзине
+    this.emitter.on("cart:check", (payload: { productId: string; callback: (inCart: boolean) => void }) => {
+  const { productId, callback } = payload;
+  if (typeof callback === "function") {
+    callback(this.has(productId));
   }
-}
+});
+  }
+
+  add(product: Product): void {
+    if (!this.items.has(product.id)) {
+      this.items.set(product.id, { ...product, quantity: 1 });
+      this.saveToStorage();
+      this.emitUpdate();
+    }
+  }
 
   remove(productId: string): void {
     this.items.delete(productId);
@@ -47,10 +55,6 @@ add(product: Product): void {
     this.emitUpdate();
   }
 
-  private emitUpdate(): void {
-    this.emitter.emit('cart:updated', { count: this.getTotalItemsCount() });
-  }
-
   getTotalItemsCount(): number {
     let total = 0;
     for (const item of this.items.values()) {
@@ -58,7 +62,13 @@ add(product: Product): void {
     }
     return total;
   }
-  
+
+  private emitUpdate(): void {
+    this.emitter.emit("cart:updated", {
+      count: this.getTotalItemsCount(),
+      items: this.getAll(),
+    });
+  }
 
   private saveToStorage(): void {
     const itemsArray = Array.from(this.items.values());
@@ -72,7 +82,7 @@ add(product: Product): void {
         const itemsArray: CartItem[] = JSON.parse(data);
         this.items = new Map(itemsArray.map(item => [item.id, item]));
       } catch (e) {
-        console.error('Ошибка при загрузке корзины:', e);
+        console.error("Ошибка при загрузке корзины:", e);
         this.items.clear();
       }
     }

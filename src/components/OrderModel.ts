@@ -45,10 +45,13 @@ getValidationErrors(): Record<string, string> {
 } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.data.email)) {
   errors.email = "Введите корректный email";
 }
-  if (!this.data.phone?.trim()) {
+if (!this.data.phone?.trim()) {
   errors.phone = "Введите номер телефона";
-} else if (!/^(7|8)\d{10}$/.test(this.data.phone.replace(/\D/g, ""))) {
-  errors.phone = "Введите корректный номер телефона";
+} else {
+  const digits = this.data.phone.replace(/\D/g, "");
+  if (!/^(7|8)\d{10}$/.test(digits)) {
+    errors.phone = "Введите корректный номер телефона";
+  }
 }
 
   return errors;

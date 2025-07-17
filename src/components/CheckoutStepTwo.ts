@@ -41,6 +41,7 @@ export class CheckoutStepTwo implements CheckoutStepTwoComponentInterface {
         value: this.phoneInput.value,
       });
     });
+    
 
     this.element.addEventListener("submit", (e) => {
       e.preventDefault();

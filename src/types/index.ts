@@ -89,7 +89,6 @@ export interface ValidationRule {
 // Компонент успешного оформления заказа
 export interface OrderSuccessComponentInterface extends ComponentInterface {
   setTotal(total: number): void;
-  onClose(callback: () => void): void;
 }
 
 export interface OrderFormData {
